@@ -8,12 +8,17 @@ import shutil
 from process_midis import midi_to_text
 from process_midis import text_to_midi
 import run_doc2vec_on_songs
+import json
 
 MIDI_FOLDER = "midi_files/"
 MIDI_TEXT_FOLDER = "midi_text_files/"
 MIDI_TEXT_MIDI_FOLDER = "midi_text_midi_files/"
 #FILENAME_LIST = "files.txt"
 OUT_DATAFRAME = "all_data.csv"
+OUT_JSON_VIEW = "all_data.json"
+VIEWER_HTML = "display_template.html"
+VIEWER_JS = "template.js"
+VIEWER_JSON = "template_json.js"
 MIDI_VECTOR_LIST = "midi_vecs.npy"
 ERROR_LOG = "errors.txt"
 
@@ -86,6 +91,20 @@ def associate_metadata(data_2d, associate_dataframe, actual_filenames):
 def are_unique(items):
     return len(items) == len(set(items))
 
+def csv_to_json(csv_name,json_name):
+    fieldnames = ("FirstName","LastName","IDNumber","Message")
+    reader = csv.DictReader( csvfile, fieldnames)
+    out = json.dumps( [ row for row in reader ] )
+
+def read_file(filename):
+    with open(filename) as  file:
+        return file.read()
+
+def prepare_json_var(json_name,js_name):
+    with open(js_name,'w') as js_file:
+        js_file.write("var input_json_data = " + read_file(json_name))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Turn a folder full of .mid files into csvs with relevant data")
     parser.add_argument('midi_dataset_root', help='Path to folder full of .mid files (looks recursively into subfolders for .mid files)')
@@ -117,3 +136,7 @@ if __name__ == "__main__":
 
     out_dataframe = associate_metadata(tranformed_data,pandas.read_csv(args.file_associated_data),[s[:-4] for s in all_text_files])
     out_dataframe.to_csv(os.path.join(output_path,OUT_DATAFRAME),index=False)
+    out_dataframe.to_json(os.path.join(output_path,OUT_JSON_VIEW),orient="records")
+    shutil.copyfile("viewer/display_template.html",os.path.join(output_path,VIEWER_HTML))
+    shutil.copyfile("viewer/template.js",os.path.join(output_path,VIEWER_JS))
+    prepare_json_var(os.path.join(output_path,OUT_JSON_VIEW),os.path.join(output_path,VIEWER_JSON))
