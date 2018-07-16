@@ -16,9 +16,11 @@ def run_midi_on_one(filename):
         with open(text_filename,'w') as text_file:
             text_file.write(midi_str)
 
-        text_to_midi.song_convert(text_filename,midi_genfilename)
-    except Exception as e:
+        #text_to_midi.song_convert(text_filename,midi_genfilename)
+    except TypeError as e:
         print(filename)
+        print(e)
+        print(e.__class__)
         sys.stdout.flush()
 
 def all_midi_files():
