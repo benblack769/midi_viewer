@@ -12,6 +12,10 @@ install additional python packages using
 
     pip install -r requirments.txt
 
+The additional system packages also need to be installed:
+
+    sudo apt-get install timidity
+
 ## Turn midi dataset into vectors
 
 

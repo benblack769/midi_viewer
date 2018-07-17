@@ -1,3 +1,4 @@
+var filename_set = new Set(input_json_data.map(dict=>dict.filename))
 function clicked_item(item){
     console.log(item)
     console.log("argg@!!!")
@@ -29,6 +30,21 @@ function add_to_dropdown_menu(parent_element, choices_list){
         parent_element.appendChild(opt);
     }
 }
+function add_filename_data(filename){
+    var display_queue = $(".mg-active-datapoint tspan").get(0)
+    console.log(display_queue)
+    var text_el = document.createElement('tspan');
+    text_el.innerText = filename
+    display_queue.appendChild(text_el)
+}
+function add_audio_player(source_name){
+    var ogg_path = "midi_ogg_files/"+source_name+".ogg"
+    var audio_player = '<audio controls>\
+      <source src="'+ogg_path+'" type="audio/ogg">\
+    Your browser does not support the audio element.\
+    </audio>'
+    document.getElementById("player_container").innerHTML = audio_player
+}
 function make_graphic(){
     MG.data_graphic({
       title: "Musica",
@@ -41,11 +57,23 @@ function make_graphic(){
       x_accessor: "x",
       y_accessor: "y",
       chart_type:'point',
-      click_to_zoom_out:false,
+      click_to_zoom_out: false,
     });
-    d3.selectAll('path').on('click', function(d, i,arg) {
-        console.log(d.data)
+    var voronoi_cells = d3.selectAll('.mg-voronoi path');
+    voronoi_cells.on('click', function(d) {
+        //console.log(d.data)
         copyToClipboard(d.data.filename)
+        document.getElementById("selected_display").innerText = d.data.filename
+    });
+    //voronoi_cells.on('mouseover', function(d) {
+    //    console.log(d)
+        //add_filename_data(d.data.filename)
+    //});
+    $('#play_input_el').bind('input', function() {
+        var this_val = $(this).val() // get the current value of the input field.
+        if(filename_set.has(this_val)){
+            add_audio_player(this_val)
+        }
     });
     var filename_list = input_json_data.map(dict=>dict['filename'])
     console.log(filename_list)

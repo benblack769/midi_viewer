@@ -6,6 +6,7 @@ import subprocess
 import os
 import shutil
 from process_midis import midi_to_text
+from process_midis import midi_to_ogg
 from process_midis import text_to_midi
 import run_doc2vec_on_songs
 import json
@@ -13,6 +14,7 @@ import json
 MIDI_FOLDER = "midi_files/"
 MIDI_TEXT_FOLDER = "midi_text_files/"
 MIDI_TEXT_MIDI_FOLDER = "midi_text_midi_files/"
+MIDI_OGG_FOLDER = "midi_ogg_files/"
 #FILENAME_LIST = "files.txt"
 OUT_DATAFRAME = "all_data.csv"
 OUT_JSON_VIEW = "all_data.json"
@@ -33,12 +35,15 @@ def process_file(source_path,output_path):
     dest_mid_filename = os.path.join(output_path,MIDI_FOLDER,source_name)
     dest_text_filename = os.path.join(output_path,MIDI_TEXT_FOLDER,source_name+".txt")
     dest_text_midi_filename = os.path.join(output_path,MIDI_TEXT_MIDI_FOLDER,source_name)
+    dest_ogg_filename = os.path.join(output_path,MIDI_OGG_FOLDER,source_name+".ogg")
     try:
         midi_str = midi_to_text.texify_song(midi_to_text.read_midi_file(source_path))
     except TypeError as e:
         # log error in log file
         open(os.path.join(output_path,ERROR_LOG),'a').write("Exception {} encountered for filename {}".format(str(e),source_path))
         return False
+
+    midi_to_ogg.midi_to_ogg(source_path,dest_ogg_filename)
 
     with open(dest_text_filename,'w') as text_file:
         text_file.write(midi_str)
@@ -66,6 +71,7 @@ def init_dirs(output_path):
     make_dir_overwrite(os.path.join(output_path,MIDI_FOLDER))
     make_dir_overwrite(os.path.join(output_path,MIDI_TEXT_FOLDER))
     make_dir_overwrite(os.path.join(output_path,MIDI_TEXT_MIDI_FOLDER))
+    make_dir_overwrite(os.path.join(output_path,MIDI_OGG_FOLDER))
 
 def calc_tsne(data):
     tsne = sklearn.manifold.TSNE()
