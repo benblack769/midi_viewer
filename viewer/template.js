@@ -1,15 +1,26 @@
 var filename_set = new Set(input_json_data.map(dict=>dict.filename))
-function clicked_item(item){
-    console.log(item)
-    console.log("argg@!!!")
-}
-function make_indicies(){
-    var l = input_json_data.length;
-    var ind = new Array(l);
-    for(var i = 0; i < l; i++){
-        ind[i] = i;
+
+function make_dropdown_menu(){
+    if(input_json_data.length == 0){
+        return;
     }
-    return ind;
+    var object = Object.assign({},input_json_data[0]);
+    delete object.x;
+    delete object.y;
+    delete object.filename;
+
+    var keys = Object.keys(object);
+    console.log(keys)
+    add_to_dropdown_menu(document.getElementById("category_options"),keys)
+}
+function unique_items(data_list,key){
+    console.log(data_list)
+    console.log(Array.from(new Set(data_list.map(d=>d[key]))))
+    return Array.from(new Set(data_list.map(d=>d[key])))
+}
+function separate_on(data_list,key){
+    var unique = unique_items(data_list,key)
+    return unique.map(value=>data_list.filter(d=>d[key]==value))
 }
 function copyToClipboard(str){
     const el = document.createElement('textarea');
@@ -30,63 +41,78 @@ function add_to_dropdown_menu(parent_element, choices_list){
         parent_element.appendChild(opt);
     }
 }
-function add_filename_data(filename){
-    var display_queue = $(".mg-active-datapoint tspan").get(0)
-    console.log(display_queue)
-    var text_el = document.createElement('tspan');
-    text_el.innerText = filename
-    display_queue.appendChild(text_el)
+function downloadURI(uri, name) {
+  var link = document.createElement("a");
+  link.download = name;
+  link.href = uri;
+  link.type = "audio/mid"
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  delete link;
 }
-function add_audio_player(source_name){
-    var ogg_path = "midi_ogg_files/"+source_name+".ogg"
-    var audio_player = '<audio controls>\
-      <source src="'+ogg_path+'" type="audio/ogg">\
-    Your browser does not support the audio element.\
-    </audio>'
-    document.getElementById("player_container").innerHTML = audio_player
-}
+
 function make_graphic(){
+    var selected = $("#category_options").val();
+    console.log(selected)
+    var tranformed_data = separate_on(input_json_data,selected)
+    console.log(tranformed_data)
     MG.data_graphic({
       title: "Musica",
-      //description: "Yearly UFO sightings from 1945 to 2010.",
-      data: input_json_data,
-      markers: make_indicies(),
       width: 800,
       height: 600,
+      data:input_json_data,
       target: "#data_plot",
       x_accessor: "x",
       y_accessor: "y",
+        color_accessor: selected,
+        color_type:'category',
       chart_type:'point',
+        //legend: ['arg','var'],
       //click_to_zoom_out: false,
       //brush: 'xy',
         mouseover: function(d, i) {
             // custom format the rollover text, show days
-            d3.select('#data_plot svg .mg-active-datapoint')
-                .text(d.data.filename);
-        },
+           // d3.select('#data_plot svg .mg-active-datapoint')
+            //    .text(d.data.filename);
+        }
     });
+
     var voronoi_cells = d3.selectAll('.mg-voronoi path');
     voronoi_cells.on('click', function(d) {
         //console.log(d.data)
         copyToClipboard(d.data.filename)
         document.getElementById("selected_display").innerText = d.data.filename
     });
-    //voronoi_cells.on('mouseover', function(d) {
-    //    console.log(d)
-        //add_filename_data(d.data.filename)
-    //});
-    $('#play_input_el').bind('input', function() {
+}
+function setup_interactive(){
+    var filename_list = input_json_data.map(dict=>dict['filename'])
+    console.log(filename_list)
+    add_to_dropdown_menu(document.getElementById("play_item"),filename_list)
+
+    /*$('#play_input_el').bind('input', function() {
         var this_val = $(this).val() // get the current value of the input field.
         if(filename_set.has(this_val)){
             add_audio_player(this_val)
         }
-    });
-    var filename_list = input_json_data.map(dict=>dict['filename'])
-    console.log(filename_list)
-    add_to_dropdown_menu(document.getElementById("play_item"),filename_list)
+    });*/
+    $("#category_options").change(make_graphic)
+    function download_type(folder){
+        var this_val = $('#play_input_el').val();
+        if(filename_set.has(this_val)){
+            downloadURI(folder+this_val,this_val)
+        }
+    }
+    $("#orig_download").click(function(){
+        download_type("midi_files/")
+    })
+    $("#manip_download").click(function(){
+        download_type("midi_text_midi_files/")
+    })
 }
-
 //function make_download_button()
 $(document).ready(function(e) {
+    make_dropdown_menu()
+    setup_interactive()
     make_graphic()
 })
