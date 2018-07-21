@@ -57,7 +57,13 @@ function make_graphic(){
       x_accessor: "x",
       y_accessor: "y",
       chart_type:'point',
-      click_to_zoom_out: false,
+      //click_to_zoom_out: false,
+      //brush: 'xy',
+        mouseover: function(d, i) {
+            // custom format the rollover text, show days
+            d3.select('#data_plot svg .mg-active-datapoint')
+                .text(d.data.filename);
+        },
     });
     var voronoi_cells = d3.selectAll('.mg-voronoi path');
     voronoi_cells.on('click', function(d) {

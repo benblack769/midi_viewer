@@ -9,6 +9,7 @@ import shutil
 from process_midis import midi_to_text
 from process_midis import midi_to_ogg
 from process_midis import text_to_midi
+from process_midis import chord_repr
 import run_doc2vec_on_songs
 import multiprocessing
 import json
@@ -22,9 +23,9 @@ MIDI_OGG_FOLDER = "midi_ogg_files/"
 #FILENAME_LIST = "files.txt"
 OUT_DATAFRAME = "all_data.csv"
 OUT_JSON_VIEW = "all_data.json"
-VIEWER_HTML = DOCUMENT_FILES+"display_template.html"
-VIEWER_JS = DOCUMENT_FILES+"template.js"
-VIEWER_JSON = DOCUMENT_FILES+"template_json.js"
+VIEWER_HTML = "display_template.html"
+VIEWER_JS = "template.js"
+VIEWER_JSON = "template_json.js"
 MIDI_VECTOR_LIST = "midi_vecs.npy"
 ERROR_LOG = "errors.txt"
 
@@ -124,8 +125,6 @@ def associate_metadata(data_2d, associate_dataframe, actual_filenames):
         "x":xvals,
         "y":yvals
     })
-    print(val_dataframe['filename'][0].__class__)
-    print(associate_dataframe['filename'][0].__class__)
     joined_metadata = val_dataframe.merge(associate_dataframe,on="filename",how="left",sort=True)
     return joined_metadata
 
@@ -145,10 +144,54 @@ def prepare_json_var(json_name,js_name):
     with open(js_name,'w') as js_file:
         js_file.write("var input_json_data = " + read_file(json_name))
 
-def process_document_viewer(output_path):
-    shutil.copyfile("viewer/display_template.html",os.path.join(output_path,VIEWER_HTML))
-    shutil.copyfile("viewer/template.js",os.path.join(output_path,VIEWER_JS))
-    prepare_json_var(os.path.join(output_path,OUT_JSON_VIEW),os.path.join(output_path,VIEWER_JSON))
+def process_word_data(all_words, word_vecs):
+    all_reprs = [chord_repr.chord_text_repr(w) for w in all_words]
+
+    tranformed_words = calc_tsne(word_vecs)
+
+    xvals,yvals = np.transpose(tranformed_words)
+    val_dataframe = pandas.DataFrame(data={
+        "chord_repr":all_reprs,
+        "chord":all_words,
+        "x":xvals,
+        "y":yvals
+    })
+    return val_dataframe
+
+def save_doc_data(output_path,doc_vecs,all_text_files):
+    np.save(os.path.join(output_path,DOCUMENT_FILES,MIDI_VECTOR_LIST),doc_vecs)
+
+    tranformed_data = calc_tsne(doc_vecs)
+
+    out_dataframe = associate_metadata(tranformed_data,pandas.read_csv(args.file_associated_data),[s[:-4] for s in all_text_files])
+
+    out_dataframe.to_csv(os.path.join(output_path,DOCUMENT_FILES,OUT_DATAFRAME),index=False)
+    out_dataframe.to_json(os.path.join(output_path,DOCUMENT_FILES,OUT_JSON_VIEW),orient="records")
+
+    shutil.copyfile("viewer/display_template.html",os.path.join(output_path,DOCUMENT_FILES,VIEWER_HTML))
+    shutil.copyfile("viewer/template.js",os.path.join(output_path,DOCUMENT_FILES,VIEWER_JS))
+    prepare_json_var(os.path.join(output_path,DOCUMENT_FILES,OUT_JSON_VIEW),os.path.join(output_path,DOCUMENT_FILES,VIEWER_JSON))
+
+def process_word_file(output_path,word):
+    dest_text_midi_filename = os.path.join(output_path,WORD_FILES,MIDI_TEXT_MIDI_FOLDER,word+".mid")
+    dest_ogg_filename = os.path.join(output_path,WORD_FILES,MIDI_OGG_FOLDER,word+".ogg")
+
+    text_to_midi.chord_to_midi(word,dest_text_midi_filename)
+
+    midi_to_ogg.midi_to_ogg(dest_text_midi_filename,dest_ogg_filename)
+
+def save_word_data(output_path,unique_words,word_vecs):
+    word_dframe = process_word_data(unique_words,word_vecs)
+
+    word_dframe.to_csv(os.path.join(output_path,WORD_FILES,OUT_DATAFRAME),index=False)
+    word_dframe.to_json(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),orient="records")
+
+    shutil.copyfile("viewer/word_display_template.html",os.path.join(output_path,WORD_FILES,VIEWER_HTML))
+    shutil.copyfile("viewer/word_template.js",os.path.join(output_path,WORD_FILES,VIEWER_JS))
+    prepare_json_var(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),os.path.join(output_path,WORD_FILES,VIEWER_JSON))
+
+    for word in unique_words:
+        process_word_file(output_path,word)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Turn a folder full of .mid files into csvs with relevant data")
@@ -173,13 +216,7 @@ if __name__ == "__main__":
 
     unique_words, word_vecs, doc_vecs = run_doc2vec_on_songs.run_doc2vec(all_text_paths)
 
-    np.save(os.path.join(output_path,MIDI_VECTOR_LIST),doc_vecs)
+    #word_data = process_word_data(unique_words, word_vecs)
 
-    tranformed_data = calc_tsne(doc_vecs)
-
-    out_dataframe = associate_metadata(tranformed_data,pandas.read_csv(args.file_associated_data),[s[:-4] for s in all_text_files])
-
-    out_dataframe.to_csv(os.path.join(output_path,OUT_DATAFRAME),index=False)
-    out_dataframe.to_json(os.path.join(output_path,OUT_JSON_VIEW),orient="records")
-
-    process_document_viewer(output_path)
+    save_doc_data(output_path,doc_vecs,all_text_files)
+    save_word_data(output_path,unique_words,word_vecs)

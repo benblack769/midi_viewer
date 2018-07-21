@@ -8,7 +8,7 @@ to listen to the sound produced by playing the chords in the sound file.
 '''
 
 DIGITS_PER_CHORD = 3
-TICKS_PER_NOTE = 50
+TICKS_PER_NOTE = 200
 
 def string_to_pitches(ch_str):
     pitches = [int(ch_str[x:x+DIGITS_PER_CHORD]) for x in range(0,len(ch_str),DIGITS_PER_CHORD)]
@@ -32,8 +32,11 @@ def text_to_chords(text):
 
 def chord_to_note_list(pitchs_list,item_num):
     # Instantiate a MIDI note on event, append it to the track
-    on_notes = [midi.NoteOnEvent(tick=(item_num)*TICKS_PER_NOTE, velocity=80, pitch=p) for p in pitchs_list]
-    off_notes = [midi.NoteOffEvent(tick=(item_num+1)*TICKS_PER_NOTE, velocity=0, pitch=p) for p in pitchs_list]
+    assert len(pitchs_list) > 0
+    on_notes = [midi.NoteOnEvent(tick=0*TICKS_PER_NOTE, velocity=80, pitch=p) for p in pitchs_list]
+
+    off_notes =([midi.NoteOffEvent(tick=1*TICKS_PER_NOTE, velocity=0, pitch=pitchs_list[0])] +
+        [midi.NoteOffEvent(tick=0*TICKS_PER_NOTE, velocity=0, pitch=p) for p in pitchs_list[1:]])
     return on_notes + off_notes
 
 def chords_to_notes(chords):
@@ -62,6 +65,14 @@ def song_convert(text_filename,midi_filename):
     song = note_list_to_song(full_note_list)
     write_song(midi_filename,song)
 
+def chord_to_midi(chord,midi_filename):
+    if not verify_text_file(chord) or len(chord.split()) != 1:
+        raise RuntimeError("chord: '{}' formatted badly. Are you sure this is a chord formatted by midi_to_text.py?".format(chord))
+
+    chords = string_to_pitches(chord)
+    notes = chord_to_note_list(chords,0)
+    song = note_list_to_song(notes)
+    write_song(midi_filename,song)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Turn a .txt file formatted by midi_to_text.py into a midi file")
