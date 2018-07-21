@@ -1,1 +1,0 @@
-var input_json_data = [{"filename":"01AusmeinesHerz.mid","x":-1208.3015136719,"y":-2653.9870605469,"author":"ars","key":"D","majorminor":"minor"},{"filename":"mary.mid","x":1208.3015136719,"y":2653.9870605469,"author":"mary","key":"D","majorminor":"minor"}]
