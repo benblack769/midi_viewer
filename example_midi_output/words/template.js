@@ -21,22 +21,25 @@ function add_to_dropdown_menu(parent_element, choices_list){
         parent_element.appendChild(opt);
     }
 }
-function add_audio_player(source_name){
+function play_audio(source_name){
     var ogg_path = "midi_ogg_files/"+source_name+".ogg"
-    var audio_player = '<audio id="audio_player">\
-      <source src="'+ogg_path+'" type="audio/ogg">\
-    Your browser does not support the audio element.\
-    </audio>'
-    document.getElementById("player_container").innerHTML = audio_player
-    document.getElementById("audio_player").play()
+    document.getElementById("player_source").src = ogg_path
+    var player = document.getElementById("audio_player")
+    //player.play();
+    player.addEventListener('loadeddata', function() {
+      if(player.readyState >= 2) {
+        player.play();
+      }
+  });
+  player.load();
 }
 function make_graphic(){
     MG.data_graphic({
       title: "Musica",
       //description: "Yearly UFO sightings from 1945 to 2010.",
       data: input_json_data,
-      width: 400,
-      height: 250,
+      width: 800,
+      height: 600,
       target: "#data_plot",
       x_accessor: "x",
       y_accessor: "y",
@@ -53,14 +56,21 @@ function make_graphic(){
     voronoi_cells.on('click', function(d) {
         //console.log(d.data)
         copyToClipboard(d.data.chord_repr)
+        play_audio(d.data.chord)
         document.getElementById("selected_display").innerText = d.data.chord_repr
     });
     $('#play_input_el').bind('input', function() {
         var this_val = $(this).val() // get the current value of the input field.
         if(word_mapping.has(this_val)){
-            add_audio_player(word_mapping.get(this_val).chord)
+            play_audio(word_mapping.get(this_val).chord)
         }
     });
+    $("#play_button").click(function(){
+        var this_val = $('#play_input_el').val() // get the current value of the input field.
+        if(word_mapping.has(this_val)){
+            play_audio(word_mapping.get(this_val).chord)
+        }
+    })
     add_to_dropdown_menu(document.getElementById("play_item"),word_list)
 }
 

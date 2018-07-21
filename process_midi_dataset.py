@@ -13,6 +13,8 @@ from process_midis import chord_repr
 import run_doc2vec_on_songs
 import multiprocessing
 import json
+import math
+import random
 
 DOCUMENT_FILES = "docs/"
 WORD_FILES = "words/"
@@ -28,6 +30,8 @@ VIEWER_JS = "template.js"
 VIEWER_JSON = "template_json.js"
 MIDI_VECTOR_LIST = "midi_vecs.npy"
 ERROR_LOG = "errors.txt"
+
+TSNE_MAX = 2000
 
 DEBUG=True
 CONVERT_TO_OGG = False
@@ -83,9 +87,9 @@ def process_all_files(paths,output_path):
         input_tuples = [(p,output_path) for p in paths]
 
         pool.map(process_file_sing,input_tuples)
-
-    for path in paths:
-        process_file(path,output_path)
+    else:
+        for path in paths:
+            process_file(path,output_path)
 
 def make_dir_overwrite(name):
     if os.path.exists(name):
@@ -108,13 +112,37 @@ def init_dirs(output_path):
     make_dir_overwrite(os.path.join(output_path,WORD_FILES,MIDI_TEXT_MIDI_FOLDER))
     make_dir_overwrite(os.path.join(output_path,WORD_FILES,MIDI_OGG_FOLDER))
 
+def build_cosine_dist_matrix(data):
+    fdata = np.float32(data)
+    fone = np.float32(1.0001)
+
+    sqr_data = np.sqrt(np.sum(fdata*fdata,axis=1))
+
+    top_data = np.stack(
+        np.sum(fdata[i] * fdata,axis=1) for i in range(len(data))
+    )
+    bottom_data = np.reshape(sqr_data,(len(data),1)) * sqr_data.transpose()
+
+    full_comp = fone-(top_data / bottom_data)
+
+    return full_comp
+
 def calc_tsne(data):
+    import sys
+    print("tsne started")
+    cos_dist_matrix = build_cosine_dist_matrix(data)
+    print(cos_dist_matrix.shape)
+    sys.stdout.flush()
+    #def cosine_d(d1,d2):
+    #    return 1.0 - np.sum(d1*d2) / (math.sqrt(np.sum(d1*d1)) * math.sqrt(np.sum(d2*d2)))
     tsne = sklearn.manifold.TSNE(metric="precomputed")
     #print(data.shape)
     #exit(1)
-    distance_matrix = pairwise_distances(data, data, metric='cosine', n_jobs=-1)
-    transformed_data = tsne.fit_transform(distance_matrix)
-
+    #distance_matrix = pairwise_distances(data, data, metric='cosine', n_jobs=1)
+    transformed_data = tsne.fit_transform(cos_dist_matrix)
+    print(transformed_data.shape)
+    print("tsne ended")
+    sys.stdout.flush()
     return transformed_data
     #print(data)
 
@@ -145,14 +173,19 @@ def prepare_json_var(json_name,js_name):
         js_file.write("var input_json_data = " + read_file(json_name))
 
 def process_word_data(all_words, word_vecs):
-    all_reprs = [chord_repr.chord_text_repr(w) for w in all_words]
+    filter_indicies = set(random.sample(range(len(all_words)),TSNE_MAX)) if len(all_words) > TSNE_MAX else range(len(all_words))
 
-    tranformed_words = calc_tsne(word_vecs)
+    filter_words = [word for i, word in enumerate(all_words) if i in filter_indicies]
+    filter_vecs = [word for i, word in enumerate(word_vecs) if i in filter_indicies]
+
+    filter_reprs = [chord_repr.chord_text_repr(w) for w in filter_words]
+
+    tranformed_words = calc_tsne(filter_vecs)
 
     xvals,yvals = np.transpose(tranformed_words)
     val_dataframe = pandas.DataFrame(data={
-        "chord_repr":all_reprs,
-        "chord":all_words,
+        "chord_repr":filter_reprs,
+        "chord":filter_words,
         "x":xvals,
         "y":yvals
     })
@@ -190,7 +223,7 @@ def save_word_data(output_path,unique_words,word_vecs):
     shutil.copyfile("viewer/word_template.js",os.path.join(output_path,WORD_FILES,VIEWER_JS))
     prepare_json_var(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),os.path.join(output_path,WORD_FILES,VIEWER_JSON))
 
-    for word in unique_words:
+    for word in word_dframe['chord']:
         process_word_file(output_path,word)
 
 if __name__ == "__main__":
