@@ -22,16 +22,7 @@ function add_to_dropdown_menu(parent_element, choices_list){
     }
 }
 function play_audio(source_name){
-    var ogg_path = "midi_ogg_files/"+source_name+".ogg"
-    document.getElementById("player_source").src = ogg_path
-    var player = document.getElementById("audio_player")
-    //player.play();
-    player.addEventListener('loadeddata', function() {
-      if(player.readyState >= 2) {
-        player.play();
-      }
-  });
-  player.load();
+    MIDIjs.play("midi_text_midi_files/"+source_name+".mid")
 }
 function make_graphic(){
     MG.data_graphic({

@@ -3,19 +3,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.0/d3.min.js' charset='utf-8'></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.11.0/metricsgraphics.js"></script>
+<script type='text/javascript' src='http://www.midijs.net/lib/midi.js'></script>
 <script src="template_json.js"></script>
 <script src="template.js"></script>
 
 <body>
-    <select id="category_options"> </select>
+    <text>Color points by: </text><select id="category_options"> </select>
     <div id="data_plot"></div>
 
     <text>Item selected: </text>
     <text id="selected_display"></text>
 
     <br>
-    <input id="play_input_el" list="play_item">
-    <datalist id="play_item"> </datalist>
-    <button id="orig_download">Download original file</button>
-    <button id="manip_download">Download manipulated file</button>
+    <!--<input id="play_input_el" list="play_item">
+    <datalist id="play_item"> </datalist>-->
+    <button id="orig_download">Play original file</button>
+    <button id="manip_download">Play manipulated file</button>
+    <br>
+    <button id="stop_play" onclick="MIDIjs.stop()">Stop play</button>
 </body>

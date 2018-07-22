@@ -15,6 +15,7 @@ import multiprocessing
 import json
 import math
 import random
+import tempfile
 
 DOCUMENT_FILES = "docs/"
 WORD_FILES = "words/"
@@ -28,8 +29,11 @@ OUT_JSON_VIEW = "all_data.json"
 VIEWER_HTML = "display_template.html"
 VIEWER_JS = "template.js"
 VIEWER_JSON = "template_json.js"
+VEC_JSON = "vec_json.js"
 MIDI_VECTOR_LIST = "midi_vecs.npy"
 ERROR_LOG = "errors.txt"
+
+NUM_DIMENTIONS = 30
 
 TSNE_MAX = 2000
 
@@ -211,7 +215,8 @@ def process_word_file(output_path,word):
 
     text_to_midi.chord_to_midi(word,dest_text_midi_filename)
 
-    midi_to_ogg.midi_to_ogg(dest_text_midi_filename,dest_ogg_filename)
+    #midi_to_ogg.midi_to_ogg(dest_text_midi_filename,dest_ogg_filename)
+
 
 def save_word_data(output_path,unique_words,word_vecs):
     word_dframe = process_word_data(unique_words,word_vecs)
@@ -222,6 +227,8 @@ def save_word_data(output_path,unique_words,word_vecs):
     shutil.copyfile("viewer/word_display_template.html",os.path.join(output_path,WORD_FILES,VIEWER_HTML))
     shutil.copyfile("viewer/word_template.js",os.path.join(output_path,WORD_FILES,VIEWER_JS))
     prepare_json_var(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),os.path.join(output_path,WORD_FILES,VIEWER_JSON))
+
+    save_string(os.path.join(output_path,WORD_FILES,VEC_JSON),"var music_vectors = " + json.dumps(word_vecs.tolist()))
 
     for word in word_dframe['chord']:
         process_word_file(output_path,word)
@@ -247,7 +254,7 @@ if __name__ == "__main__":
 
     all_text_paths = [os.path.join(output_path,DOCUMENT_FILES,MIDI_TEXT_FOLDER,name) for name in all_text_files]
 
-    unique_words, word_vecs, doc_vecs = run_doc2vec_on_songs.run_doc2vec(all_text_paths)
+    unique_words, word_vecs, doc_vecs = run_doc2vec_on_songs.run_doc2vec(all_text_paths,NUM_DIMENTIONS)
 
     #word_data = process_word_data(unique_words, word_vecs)
 

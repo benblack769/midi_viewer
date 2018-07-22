@@ -26,12 +26,12 @@ def all_words(docs):
     words = {w for d in docs for w in d.words }
     return list(words)
 
-def run_doc2vec(doc_filenames):
+def run_doc2vec(doc_filenames,num_dims):
     docs = get_tagged_docs(doc_filenames)
     total_word_count = doc_count(docs)
     unique_word_list = all_words(docs)
     model = Doc2Vec(
-            vector_size=6,
+            vector_size=num_dims,
             window=5,# consider fiddling with this parameter
             min_count=1,
             workers=4,
