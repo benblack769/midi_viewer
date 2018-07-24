@@ -1,3 +1,4 @@
 *.pyc
 *.ogg
 example_midi_output/words/midi_text_midi_files
+example_midi_output/words/vec_json.json

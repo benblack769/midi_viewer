@@ -26,10 +26,12 @@ MIDI_OGG_FOLDER = "midi_ogg_files/"
 #FILENAME_LIST = "files.txt"
 OUT_DATAFRAME = "all_data.csv"
 OUT_JSON_VIEW = "all_data.json"
+OUT_DATAFRAME_PART = "view_data.csv"
+OUT_JSON_PART_VIEW = "view_data.json"
 VIEWER_HTML = "display_template.html"
 VIEWER_JS = "template.js"
 VIEWER_JSON = "template_json.js"
-VEC_JSON = "vec_json.js"
+VEC_JSON = "vec_json.json"
 MIDI_VECTOR_LIST = "midi_vecs.npy"
 ERROR_LOG = "errors.txt"
 
@@ -40,6 +42,7 @@ TSNE_MAX = 2000
 DEBUG=True
 CONVERT_TO_OGG = False
 USE_CHORD_LIST_AS_MID = True
+
 
 def all_midi_files(root_dir):
     find_call = ["find", root_dir, "-name", '*.mid', "-type", "f" ]
@@ -176,7 +179,15 @@ def prepare_json_var(json_name,js_name):
     with open(js_name,'w') as js_file:
         js_file.write("var input_json_data = " + read_file(json_name))
 
-def process_word_data(all_words, word_vecs):
+def process_all_word_data(all_words, word_vecs):
+    all_reprs = [chord_repr.chord_text_repr(w) for w in all_words]
+    val_dataframe = pandas.DataFrame(data={
+        "chord_repr":all_reprs,
+        "chord":all_words,
+    })
+    return val_dataframe
+
+def process_view_word_data(all_words, word_vecs):
     filter_indicies = set(random.sample(range(len(all_words)),TSNE_MAX)) if len(all_words) > TSNE_MAX else range(len(all_words))
 
     filter_words = [word for i, word in enumerate(all_words) if i in filter_indicies]
@@ -190,6 +201,7 @@ def process_word_data(all_words, word_vecs):
     val_dataframe = pandas.DataFrame(data={
         "chord_repr":filter_reprs,
         "chord":filter_words,
+        "idx":sorted(filter_indicies),
         "x":xvals,
         "y":yvals
     })
@@ -217,20 +229,35 @@ def process_word_file(output_path,word):
 
     #midi_to_ogg.midi_to_ogg(dest_text_midi_filename,dest_ogg_filename)
 
+def round_list_lists(lls):
+    return [[round(x,8) for x in l] for l in lls]
+
+def filter_indicies(item_list,idicies):
+    assert list(idicies) == sorted(idicies)
+    idx_set = set(idicies)
+    return [itm for idx,itm in enumerate(item_list) if idx in idx_set]
 
 def save_word_data(output_path,unique_words,word_vecs):
-    word_dframe = process_word_data(unique_words,word_vecs)
+    np.save(os.path.join(output_path,WORD_FILES,MIDI_VECTOR_LIST),word_vecs)
 
-    word_dframe.to_csv(os.path.join(output_path,WORD_FILES,OUT_DATAFRAME),index=False)
-    word_dframe.to_json(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),orient="records")
+    word_view_dframe = process_view_word_data(unique_words,word_vecs)
+    word_all_dframe = process_all_word_data(unique_words,word_vecs)
+
+    word_all_dframe.to_csv(os.path.join(output_path,WORD_FILES,OUT_DATAFRAME),index=False)
+    word_view_dframe.to_csv(os.path.join(output_path,WORD_FILES,OUT_DATAFRAME_PART),index=False)
+    word_view_dframe.to_json(os.path.join(output_path,WORD_FILES,OUT_JSON_PART_VIEW),orient="records")
+    #word_dframe.to_json(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),orient="records")
 
     shutil.copyfile("viewer/word_display_template.html",os.path.join(output_path,WORD_FILES,VIEWER_HTML))
     shutil.copyfile("viewer/word_template.js",os.path.join(output_path,WORD_FILES,VIEWER_JS))
-    prepare_json_var(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),os.path.join(output_path,WORD_FILES,VIEWER_JSON))
+    shutil.copyfile("viewer/math_lib.js",os.path.join(output_path,WORD_FILES,"math_lib.js"))
+    prepare_json_var(os.path.join(output_path,WORD_FILES,OUT_JSON_PART_VIEW),os.path.join(output_path,WORD_FILES,VIEWER_JSON))
 
-    save_string(os.path.join(output_path,WORD_FILES,VEC_JSON),"var music_vectors = " + json.dumps(word_vecs.tolist()))
+    view_word_vec_list = filter_indicies(word_vecs.tolist(),word_view_dframe.idx)
+    save_string(os.path.join(output_path,WORD_FILES,VEC_JSON),json.dumps(round_list_lists(view_word_vec_list),separators=(',', ':')))
+    #save_string(os.path.join(output_path,WORD_FILES,"arg.json"),json.dumps(round_list_lists(word_vecs),separators=(',', ':')))
 
-    for word in word_dframe['chord']:
+    for word in word_view_dframe['chord']:
         process_word_file(output_path,word)
 
 if __name__ == "__main__":

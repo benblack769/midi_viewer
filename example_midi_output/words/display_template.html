@@ -3,21 +3,43 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.0/d3.min.js' charset='utf-8'></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.11.0/metricsgraphics.js"></script>
+<script type='text/javascript' src='http://www.midijs.net/lib/midi.js'></script>
 <script src="template_json.js"></script>
+<script src="math_lib.js"></script>
 <script src="template.js"></script>
 
 <body>
     <div id="data_plot"></div>
+    <datalist id="song_list"> </datalist>
 
     <text>Item selected: </text>
-    <text id="selected_display"></text>
+	<input id="selected_display" list="song_list">
 
     <br>
-    <input id="play_input_el" list="play_item">
-    <datalist id="play_item"> </datalist>
+    <input id="play_input_el" list="song_list">
+
+
     <button id="play_button">Play</button>
-    <audio id="audio_player">
-      <source id="player_source" src="" type="audio/ogg">
-    Your browser does not support the audio element.
-    </audio>'
+
+    <div class="vec_calc_elmt" hidden>
+		<p>Analogy calculator</p>
+        <input id="analogy1_in" list="song_list" class="analogy_calc">
+        -
+        <input id="analogy2_in" list="song_list" class="analogy_calc">
+        =
+        <input id="analogy3_in" list="song_list" class="analogy_calc">
+        -
+        <text id="analogy_res">________</text>
+    </div>
+
+    <div class="vec_calc_elmt" hidden>
+		<p>Distance calculator</p>
+
+		dist(
+        <input id="distance1_in" list="song_list" class="dist_calc">
+		,
+        <input id="distance2_in" list="song_list" class="dist_calc">
+		) =
+		<text id="dist_res"></text>
+	</div>
 </body>
