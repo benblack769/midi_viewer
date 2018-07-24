@@ -38,21 +38,19 @@ function add_to_dropdown_menu(parent_element, choices_list){
     }
 }
 function downloadURI(uri, name) {
-  var link = document.createElement("a");
-  link.download = name;
-  link.href = uri;
-  link.type = "audio/mid"
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  delete link;
+    var link = document.createElement("a");
+    link.download = name;
+    link.href = uri;
+    link.type = "audio/mid"
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    delete link;
 }
 
 function make_graphic(){
     var selected = $("#category_options").val();
     console.log(selected)
-    var tranformed_data = separate_on(input_json_data,selected)
-    console.log(tranformed_data)
     MG.data_graphic({
       title: "Musica",
       description: "Click to copy point filenames to ",

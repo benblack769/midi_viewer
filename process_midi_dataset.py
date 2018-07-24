@@ -11,8 +11,8 @@ from process_midis import midi_to_ogg
 from process_midis import text_to_midi
 from process_midis import chord_repr
 import run_doc2vec_on_songs
-import multiprocessing
 import json
+from collections import Counter
 import math
 import random
 import tempfile
@@ -35,13 +35,9 @@ VEC_JSON = "vec_json.json"
 MIDI_VECTOR_LIST = "midi_vecs.npy"
 ERROR_LOG = "errors.txt"
 
-NUM_DIMENTIONS = 30
+NUM_OUTPUT_DIMENTIONS = 30
 
-TSNE_MAX = 2000
-
-DEBUG=True
-CONVERT_TO_OGG = False
-USE_CHORD_LIST_AS_MID = True
+MAX_WORDS_TO_DISPLAY = 2000
 
 
 def all_midi_files(root_dir):
@@ -79,24 +75,14 @@ def process_file(source_path,output_path):
 
     text_to_midi.song_convert(dest_text_filename,dest_text_midi_filename)
 
-    if CONVERT_TO_OGG:
-        src_mid_path = dest_text_midi_filename if USE_CHORD_LIST_AS_MID else source_path
-        midi_to_ogg.midi_to_ogg(src_mid_path,dest_ogg_filename)
-
     return True
 
 def process_file_sing(inp):
     return process_file(inp[0],inp[1])
 
 def process_all_files(paths,output_path):
-    if not DEBUG:
-        pool = multiprocessing.Pool()
-        input_tuples = [(p,output_path) for p in paths]
-
-        pool.map(process_file_sing,input_tuples)
-    else:
-        for path in paths:
-            process_file(path,output_path)
+    for path in paths:
+        process_file(path,output_path)
 
 def make_dir_overwrite(name):
     if os.path.exists(name):
@@ -187,11 +173,14 @@ def process_all_word_data(all_words, word_vecs):
     })
     return val_dataframe
 
-def process_view_word_data(all_words, word_vecs):
-    filter_indicies = set(random.sample(range(len(all_words)),TSNE_MAX)) if len(all_words) > TSNE_MAX else range(len(all_words))
+def process_view_word_data(all_words, word_vecs, count_stats):
+    filter_words_counts = count_stats.most_common(MAX_WORDS_TO_DISPLAY)
+    filter_words = {word for word,count in filter_words_counts}
+    #filter_indicies = set(random.sample(range(len(all_words)),MAX_WORDS_TO_DISPLAY)) if len(all_words) > MAX_WORDS_TO_DISPLAY else range(len(all_words))
 
-    filter_words = [word for i, word in enumerate(all_words) if i in filter_indicies]
-    filter_vecs = [word for i, word in enumerate(word_vecs) if i in filter_indicies]
+    filter_words = [word for word in all_words if word in filter_words]
+    filter_indicies = [idx for idx,word in enumerate(all_words) if word in filter_words]
+    filter_vecs = [vec for word,vec in zip(all_words,word_vecs) if word in filter_words]
 
     filter_reprs = [chord_repr.chord_text_repr(w) for w in filter_words]
 
@@ -201,7 +190,7 @@ def process_view_word_data(all_words, word_vecs):
     val_dataframe = pandas.DataFrame(data={
         "chord_repr":filter_reprs,
         "chord":filter_words,
-        "idx":sorted(filter_indicies),
+        "idx":filter_indicies,
         "x":xvals,
         "y":yvals
     })
@@ -237,10 +226,10 @@ def filter_indicies(item_list,idicies):
     idx_set = set(idicies)
     return [itm for idx,itm in enumerate(item_list) if idx in idx_set]
 
-def save_word_data(output_path,unique_words,word_vecs):
+def save_word_data(output_path,unique_words,word_vecs,count_stats):
     np.save(os.path.join(output_path,WORD_FILES,MIDI_VECTOR_LIST),word_vecs)
 
-    word_view_dframe = process_view_word_data(unique_words,word_vecs)
+    word_view_dframe = process_view_word_data(unique_words,word_vecs,count_stats)
     word_all_dframe = process_all_word_data(unique_words,word_vecs)
 
     word_all_dframe.to_csv(os.path.join(output_path,WORD_FILES,OUT_DATAFRAME),index=False)
@@ -259,6 +248,10 @@ def save_word_data(output_path,unique_words,word_vecs):
 
     for word in word_view_dframe['chord']:
         process_word_file(output_path,word)
+
+def get_word_count_stats(all_text_paths):
+    full_word_list = (" ".join(read_file(fname) for fname in all_text_paths)).split()
+    return Counter(full_word_list)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Turn a folder full of .mid files into csvs with relevant data")
@@ -281,9 +274,11 @@ if __name__ == "__main__":
 
     all_text_paths = [os.path.join(output_path,DOCUMENT_FILES,MIDI_TEXT_FOLDER,name) for name in all_text_files]
 
-    unique_words, word_vecs, doc_vecs = run_doc2vec_on_songs.run_doc2vec(all_text_paths,NUM_DIMENTIONS)
+    count_stats = get_word_count_stats(all_text_paths)
+
+    unique_words, word_vecs, doc_vecs = run_doc2vec_on_songs.run_doc2vec(all_text_paths,NUM_OUTPUT_DIMENTIONS)
 
     #word_data = process_word_data(unique_words, word_vecs)
 
     save_doc_data(output_path,doc_vecs,all_text_files)
-    save_word_data(output_path,unique_words,word_vecs)
+    save_word_data(output_path,unique_words,word_vecs,count_stats)
