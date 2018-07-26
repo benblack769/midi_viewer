@@ -9,6 +9,11 @@ Idea: Turn chords into 'words' for doc2vec
 different strategies for doing so described in `midi_to_text_methods.py`
 '''
 
+def verify_values(ticks):
+    for tick in ticks:
+        if tick['pitch'] > 127 or tick['pitch'] < 0:
+            raise TypeError("bad pitch value")
+
 def tickify_song(song):
     ticks = []
     for i in range(len(song)):
@@ -28,9 +33,9 @@ def tickify_song(song):
                     'channel': note.channel,
                     'on': False,
                 })
+    verify_values(ticks)
     ticks.sort(key=lambda tick: tick['tick'])
     return ticks
-
 
 def flatten_chords(chords):
     flat_chords = []

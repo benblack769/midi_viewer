@@ -16,6 +16,7 @@ from collections import Counter
 import math
 import random
 import tempfile
+import multiprocessing
 
 DOCUMENT_FILES = "docs/"
 WORD_FILES = "words/"
@@ -35,10 +36,11 @@ VEC_JSON = "vec_json.json"
 MIDI_VECTOR_LIST = "midi_vecs.npy"
 ERROR_LOG = "errors.txt"
 
+DEBUG=False
 NUM_OUTPUT_DIMENTIONS = 30
-
 MAX_WORDS_TO_DISPLAY = 2000
 
+TEXTIFY_STRATEGY = "stack_ticks_into_chords_turn_off_when_channel_activates"
 
 def all_midi_files(root_dir):
     find_call = ["find", root_dir, "-name", '*.mid', "-type", "f" ]
@@ -47,10 +49,14 @@ def all_midi_files(root_dir):
 
 def attempt_textify(source_path):
     try:
-        midi_str = midi_to_text.texify_song(midi_to_text.read_midi_file(source_path))
+        midi_str = midi_to_text.texify_song(midi_to_text.read_midi_file(source_path),TEXTIFY_STRATEGY)
         return midi_str
     except TypeError as e:
         # log error in log file
+        open(os.path.join(output_path,ERROR_LOG),'a').write("Exception {} encountered for filename {}".format(str(e),source_path))
+        return None
+    except AssertionError as e:
+        # assertions are caught because python-midi raises some file input problems as assertions, instead of regular eerors!
         open(os.path.join(output_path,ERROR_LOG),'a').write("Exception {} encountered for filename {}".format(str(e),source_path))
         return None
 
@@ -81,8 +87,13 @@ def process_file_sing(inp):
     return process_file(inp[0],inp[1])
 
 def process_all_files(paths,output_path):
-    for path in paths:
-        process_file(path,output_path)
+    if DEBUG:
+        for path in paths:
+            process_file(path,output_path)
+    else:
+        zip_inputs = [(path,output_path) for path in paths]
+        pool = multiprocessing.Pool()
+        pool.map(process_file_sing,zip_inputs)
 
 def make_dir_overwrite(name):
     if os.path.exists(name):
