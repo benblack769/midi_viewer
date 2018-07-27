@@ -219,6 +219,7 @@ def save_doc_data(output_path,doc_vecs,all_text_files):
 
     shutil.copyfile("viewer/display_template.html",os.path.join(output_path,DOCUMENT_FILES,VIEWER_HTML))
     shutil.copyfile("viewer/template.js",os.path.join(output_path,DOCUMENT_FILES,VIEWER_JS))
+    shutil.copyfile("viewer/metricsgraphics.js",os.path.join(output_path,DOCUMENT_FILES,"metricsgraphics.js"))
     prepare_json_var(os.path.join(output_path,DOCUMENT_FILES,OUT_JSON_VIEW),os.path.join(output_path,DOCUMENT_FILES,VIEWER_JSON))
 
 def process_word_file(output_path,word):
@@ -251,6 +252,7 @@ def save_word_data(output_path,unique_words,word_vecs,count_stats):
     shutil.copyfile("viewer/word_display_template.html",os.path.join(output_path,WORD_FILES,VIEWER_HTML))
     shutil.copyfile("viewer/word_template.js",os.path.join(output_path,WORD_FILES,VIEWER_JS))
     shutil.copyfile("viewer/math_lib.js",os.path.join(output_path,WORD_FILES,"math_lib.js"))
+    shutil.copyfile("viewer/metricsgraphics.js",os.path.join(output_path,WORD_FILES,"metricsgraphics.js"))
     prepare_json_var(os.path.join(output_path,WORD_FILES,OUT_JSON_PART_VIEW),os.path.join(output_path,WORD_FILES,VIEWER_JSON))
 
     view_word_vec_list = filter_indicies(word_vecs.tolist(),word_view_dframe.idx)

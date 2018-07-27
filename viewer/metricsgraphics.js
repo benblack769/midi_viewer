@@ -781,8 +781,9 @@ MG.data_graphic = function (args) {
     brush: null, // add brushing function for this chart. could be set as 'xy', 'x', 'y' to restrict axis
     zoom_target: null, // zooming target of brushing function. if not set the default is to zoom the current chart
     brushing_selection_changed: null, // callback function on brushing. the first parameter are the arguments that correspond to this chart, the second parameter is the range of the selection
-    click_to_zoom_out: true // if true and the graph is currently zoomed in, clicking on the graph will zoom out
-  };
+    click_to_zoom_out: true, // if true and the graph is currently zoomed in, clicking on the graph will zoom out
+	zoom_callback: null
+ };
 
   MG.call_hook('global.defaults', defaults);
 
@@ -3705,7 +3706,8 @@ function mg_mouseover_text(args, rargs) {
   var zoom_to_data_domain = function zoom_to_data_domain(args, range) {
     var raw_data = args.processed.raw_data || args.data;
     // store raw data and raw domain to in order to zoom back to the initial state
-    if (!('raw_data' in args.processed)) {
+
+	if (!('raw_data' in args.processed)) {
       args.processed.raw_domain = {
         x: args.scales.X.domain(),
         y: args.scales.Y.domain()
@@ -3733,11 +3735,14 @@ function mg_mouseover_text(args, rargs) {
       }
     }
     new MG.charts[args.chart_type || defaults.chart_type].descriptor(args);
+	if (args.zoom_callback){
+		args.zoom_callback()
+	}
   };
 
   var zoom_to_raw_range = function zoom_to_raw_range(args) {
     if (!('raw_domain' in args.processed)) return;
-    zoom_to_data_domain(args, args.processed.raw_domain);
+	zoom_to_data_domain(args, args.processed.raw_domain);
     delete args.processed.raw_domain;
     delete args.processed.raw_data;
   };

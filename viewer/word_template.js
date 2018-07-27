@@ -3,6 +3,10 @@ var word_mapping = new Map(input_json_data.map(dict=>[dict.chord_repr,dict]))
 var word_list = input_json_data.map(dict=>dict.chord_repr)
 var numpy_vecs = null;
 
+var xsize = 800;
+var ysize = 600;
+var graphics = [];
+
 function copyToClipboard(str){
     const el = document.createElement('textarea');
     el.value = str;
@@ -30,49 +34,42 @@ function add_to_dropdown_menu(parent_element, choices_list){
 function play_audio(source_name){
     MIDIjs.play("midi_text_midi_files/"+source_name+".mid")
 }
-function create_sel_circ(curpoint){
-	var svgNS = "http://www.w3.org/2000/svg";
-	var circ = document.createElementNS(svgNS,'circle')
-	circ.setAttributeNS(null,"cx",curpoint.attr('cx'));
-	circ.setAttributeNS(null,"cx",curpoint.attr('cy'));
-	circ.setAttributeNS(null,"r",10);
-	circ.setAttributeNS(null,"stroke","red");
-	circ.setAttributeNS(null,"fill","");
-	circ.setAttributeNS(null,"stroke-width",3);
-	//circ["stroke-width"]= 3
-	console.log(circ)
-	return circ
+function clear_red_circ(parent_id){
+	d3.select(parent_id).selectAll("*").remove()
+}
+function draw_red_circ(parent_id,cx,cy){
+	clear_red_circ(parent_id)
+
+	d3.select(parent_id).append('circle')
+		.attr("cx", cx)
+		.attr("cy", cy)
+		.attr("r", 8)
+		.attr("stroke", "red")
+		.attr("fill", "rgba(0,0,0,0)")
+		.attr("stroke-width", 3)
 }
 function select_word(chord){
-	d3.select("#display_select").selectAll("*").remove()
+	clear_red_circ("#overview_select")
 	//document.getElementById("selected_display").value = ""
 	if(word_mapping.has(chord)){
-		var idx = word_list.indexOf(chord)
+		var word_idx = word_list.indexOf(chord)
 
-		var point_dom_elmt = $('circle.path-'+idx)
-		console.log(point_dom_elmt)
-		d3.select("#display_select").append('circle')
-			.attr("cx", point_dom_elmt.attr("cx"))
-			.attr("cy", point_dom_elmt.attr("cy"))
-			.attr("r", 8)
-			.attr("stroke", "red")
-			.attr("fill", "rgba(0,0,0,0)")
-			.attr("stroke-width", 3)
+		var point_dom_elmt = $('#overview_plot svg g.mg-points circle.path-'+word_idx)
+
+		draw_red_circ("#overview_select",point_dom_elmt.attr("cx"),point_dom_elmt.attr("cy"))
+
+		redraw_red_circ()
 
 		document.getElementById("selected_display").value = chord
 	}
 }
 function handle_selection(){
-	d3.select("svg").append('g')
-			.attr("id","display_select")
-    var voronoi_cells = d3.selectAll('.mg-voronoi path');
-    voronoi_cells.on('click', function(d,i) {
-        //console.log(d.data)
-		//create_sel_circ(point_dom_elmt))
-        select_word(d.data.chord_repr)
-        play_audio(d.data.chord)
-        //document.getElementById("selected_display").innerText = d.data.chord_repr
-    });
+	d3.select("#overview_plot svg").append('g')
+			.attr("id","overview_select")
+
+	$("#overview_plot").hide()
+	d3.select("#data_plot svg").append('g')
+			.attr("id","data_select")
 	$("#selected_display").change(function(){
 		select_word($(this).val())
 	})
@@ -119,26 +116,82 @@ function handle_calculation(){
 		document.getElementById("dist_res").innerText = result;
 	})
 }
+function redraw_red_circ(){
+	var elmt = $("#overview_select circle")[0]
+	if(!elmt){
+		return;
+	}
+	//console.log(elmt)
+	var point = {
+		x: elmt.cx.baseVal.value,
+		y: elmt.cy.baseVal.value,
+	}
+	var data_point = {
+		x: graphics[1].scales.X.invert(point.x),
+		y: graphics[1].scales.Y.invert(point.y),
+	}
+	var display_point = {
+		x: graphics[0].scales.X(data_point.x),
+		y: graphics[0].scales.Y(data_point.y),
+	}
+	draw_red_circ("#data_select",display_point.x,display_point.y);
+}
 function make_graphic(){
-    MG.data_graphic({
+	var data_graphic = {
       title: "Musica",
       //description: "Yearly UFO sightings from 1945 to 2010.",
       data: input_json_data,
-      width: 800,
-      height: 600,
+      width: xsize,
+      height: ysize,
       target: "#data_plot",
       x_accessor: "x",
       y_accessor: "y",
       chart_type:'point',
-      //click_to_zoom_out: false,
+      brush: 'xy',
+      //missing_is_hidden: true,
+	  click_to_zoom_out: false,
       //brush: 'xy',
-        mouseover: function(d, i) {
+	  zoom_callback:function(){
+		redraw_red_circ()
+	  },
+      mouseover: function(d, i) {
             // custom format the rollover text, show days
             d3.select('#data_plot svg .mg-active-datapoint')
                 .text(d.data.chord_repr);
         },
+	  click: function(d,i) {
+        select_word(d.data.chord_repr)
+        play_audio(d.data.chord)
+    }
+    }
+    graphics.push(data_graphic);
+	graphics.push({
+      title: "Musica",
+      //description: "Yearly UFO sightings from 1945 to 2010.",
+      data: input_json_data,
+      width: 400,
+      height: 300,
+        top: 20,
+        bottom: 20,
+        right: 0,
+        left: 0,
+      target: "#overview_plot",
+      x_accessor: "x",
+      y_accessor: "y",
+      chart_type:'point',
+	  zoom_target: data_graphic,
+      brush: 'xy',
+        x_axis: false,
+        y_axis: false,
+        showActivePoint: false,
     });
+	MG.data_graphic(graphics[0])
+	MG.data_graphic(graphics[1])
+	$("#zoom_out_button").click(function(){
+		MG.zoom_to_raw_range(data_graphic)
+	})
 }
+
 
 //function make_download_button()
 $(document).ready(function(e) {
