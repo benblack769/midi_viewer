@@ -38,44 +38,48 @@ function add_to_dropdown_menu(parent_element, choices_list){
     }
 }
 function downloadURI(uri, name) {
-  var link = document.createElement("a");
-  link.download = name;
-  link.href = uri;
-  link.type = "audio/mid"
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  delete link;
+    var link = document.createElement("a");
+    link.download = name;
+    link.href = uri;
+    link.type = "audio/mid"
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    delete link;
 }
 
 function make_graphic(){
     var selected = $("#category_options").val();
     console.log(selected)
-    var tranformed_data = separate_on(input_json_data,selected)
-    console.log(tranformed_data)
-    MG.data_graphic({
-      title: "Musica",
-      description: "Click to copy point filenames to ",
-      width: 800,
-      height: 600,
-      data:input_json_data,
-      target: "#data_plot",
-      x_accessor: "x",
-      y_accessor: "y",
-        color_accessor: selected,
-        color_type:'category',
-      chart_type:'point',
-        //legend: ['arg','var'],
-      //click_to_zoom_out: false,
-      //brush: 'xy',
-    });
+	var graphic_args = {
+		title: "Musica",
+		description: "Click to copy point filenames to ",
+		width: 800,
+		height: 600,
+		data:input_json_data,
+		target: "#data_plot",
+		x_accessor: "x",
+		y_accessor: "y",
+		color_accessor: selected,
+		color_type:'category',
+		chart_type:'point',
+		//legend: ['arg','var'],
+		click_to_zoom_out: false,
+		brush: 'xy',
+		click: function(d){
+			document.getElementById("selected_display").innerText = d.data.filename
+		}
+    }
+    MG.data_graphic(graphic_args);
+	$("#zoom_out_button").click(function(){
+		MG.zoom_to_raw_range(graphic_args)
+	})
 
-    var voronoi_cells = d3.selectAll('.mg-voronoi path');
+    /*var voronoi_cells = d3.selectAll('.mg-voronoi path');
     voronoi_cells.on('click', function(d) {
         //console.log(d.data)
         //copyToClipboard(d.data.filename)
-        document.getElementById("selected_display").innerText = d.data.filename
-    });
+    });*/
 }
 function setup_interactive(){
     var filename_list = input_json_data.map(dict=>dict['filename'])
