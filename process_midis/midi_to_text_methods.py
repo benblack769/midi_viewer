@@ -35,6 +35,7 @@ def merge_dicts(base_dict,replace_dict):
 
 def stack_ticks_into_chords(ticks):
     chords = [defaultdict(set)]
+    chord_ticks = [0]
     tick_idx = 0
     while tick_idx < len(ticks):
         tick_num = ticks[tick_idx]['tick']
@@ -52,10 +53,12 @@ def stack_ticks_into_chords(ticks):
 
         if some_turned_on:
             chords.append(chord)
-    return chords
+            chord_ticks.append(tick_idx)
+    return list(zip(chords,chord_ticks))
 
 def stack_ticks_into_chords_turn_off_when_channel_activates(ticks):
     chords = [defaultdict(set)]
+    chord_ticks = [0]
     tick_idx = 50
     while tick_idx < len(ticks):
         tick_num = ticks[tick_idx]['tick']
@@ -72,11 +75,14 @@ def stack_ticks_into_chords_turn_off_when_channel_activates(ticks):
             tick_idx += 1
 
         if some_turned_on:
-            chords.append(merge_dicts(chords[-1],chord))
-    return chords
+            new_chord = merge_dicts(chords[-1],chord)
+            chords.append(new_chord)
+            chord_ticks.append(tick_idx)
+    return list(zip(chords,chord_ticks))
 
-def stack_ticks_into_chords_turn_off_on_timeout(ticks, TICK_TIMOUT=0):
+def stack_ticks_into_chords_turn_off_on_timeout(ticks, TICK_TIMOUT=50):
     chords = [defaultdict(dict)]
+    chord_ticks = [0]
     tick_idx = 0
     while tick_idx < len(ticks):
         tick_num = ticks[tick_idx]['tick']
@@ -100,39 +106,23 @@ def stack_ticks_into_chords_turn_off_on_timeout(ticks, TICK_TIMOUT=0):
 
         if some_turned_on:
             chords.append(chord)
-    return chords
+            chord_ticks.append(tick_idx)
+    return list(zip(chords,chord_ticks))
 
-def stack_ticks_at_time_intervals(ticks, TICK_TIMOUT=0):
-    chords = [defaultdict(dict)]
-    tick_idx = 0
-    while tick_idx < len(ticks):
-        tick_num = ticks[tick_idx]['tick']
-        chord = copy.deepcopy(chords[-1])
-        for channel_pitchs in chord.values():
-            for pitch, tick in list(channel_pitchs.items()):
-                if tick + TICK_TIMOUT < tick_num:
-                    del channel_pitchs[pitch]
+def ignore_ticks(stack_tick_fn):
+    def new_fn(*args):
+        chrds = stack_tick_fn(*args)
+        return [chord for chord,tick_idx in chrds]
+    return new_fn
 
-        some_turned_on = False
-        while tick_idx < len(ticks) and ticks[tick_idx]['tick'] == tick_num:
-            pitch = ticks[tick_idx]['pitch']
-            channel = ticks[tick_idx]['channel']
-            if ticks[tick_idx]['on'] is False:
-                if pitch in chord[channel]:
-                    del chord[channel][pitch]
-            else:
-                chord[channel][pitch] = tick_num
-                some_turned_on = True
-            tick_idx += 1
+def choose_chords_at_random_time_intervals(ticks, time_interval=1.0/6.0):
 
-        if some_turned_on:
-            chords.append(chord)
-    return chords
+
 
 _methods_by_name = {
-    "stack_ticks_into_chords":stack_ticks_into_chords,
-    "stack_ticks_into_chords_turn_off_when_channel_activates":stack_ticks_into_chords_turn_off_when_channel_activates,
-    "stack_ticks_into_chords_turn_off_on_timeout":stack_ticks_into_chords_turn_off_on_timeout,
+    "stack_ticks_into_chords":ignore_ticks(stack_ticks_into_chords),
+    "stack_ticks_into_chords_turn_off_when_channel_activates":ignore_ticks(stack_ticks_into_chords_turn_off_when_channel_activates),
+    "stack_ticks_into_chords_turn_off_on_timeout":ignore_ticks(stack_ticks_into_chords_turn_off_on_timeout),
 }
 
 def get_method_by_name(method_name):
