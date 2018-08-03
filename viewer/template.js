@@ -3,7 +3,7 @@ var filename_set = null;
 var song_list = null;
 var numpy_vecs = null;
 
-function make_dropdown_menu(add_distance){
+function make_dropdown_menu(base_sel,add_distance){
     if(input_json_data.length == 0){
         return;
     }
@@ -16,7 +16,6 @@ function make_dropdown_menu(add_distance){
     if(add_distance){
         keys.push("distance_to_selected")
     }
-    var base_sel = document.getElementById("category_options")
     base_sel.innerHTML = ""
     add_to_dropdown_menu(base_sel,keys)
 }
@@ -69,12 +68,13 @@ function list_key_values(data){
 }
 function make_graphic(){
     var selected = $("#category_options").val();
+    var filtered_input_json = fliter_out_selected()
 	var graphic_args = {
 		title: "Musica",
 		description: "Click to copy point filenames to ",
 		width: 800,
 		height: 600,
-		data:input_json_data,
+		data:filtered_input_json,
 		target: "#data_plot",
 		x_accessor: "x",
 		y_accessor: "y",
@@ -129,6 +129,23 @@ function setup_interactive(){
 	$("#zoom_out_button").click(function(){
 		MG.zoom_to_raw_range(graphic_args)
 	})
+    $("#select_options").change(change_selection)
+    $("#select_out_options").change(make_graphic)
+}
+function fliter_out_selected(){
+    var key = $("#select_options").val()
+    var value = $("#select_out_options").val()
+
+    var filtered = input_json_data.filter(dict=>dict[key]==value)
+    return value == "All" ? input_json_data : filtered;
+}
+function change_selection(){
+    var sel_val = $("#select_options").val()
+    choices = Array.from(new Set(input_json_data.map(dict=>dict[sel_val])))
+    choices.unshift("All")
+    var parent = document.getElementById("select_out_options")
+    parent.innerHTML = ""
+    add_to_dropdown_menu(parent,choices)
 }
 
 function load_data(){
@@ -136,13 +153,15 @@ function load_data(){
         input_json_data = json;
         filename_set = new Set(input_json_data.map(dict=>dict.filename))
         song_list = input_json_data.map(dict=>dict.filename)
-        make_dropdown_menu(numpy_vecs)
+        make_dropdown_menu(document.getElementById("category_options"),numpy_vecs)
+        make_dropdown_menu(document.getElementById("select_options"),numpy_vecs)
+        setup_interactive()
+        change_selection()
         make_graphic()
-    	setup_interactive()
     })
 	$.getJSON("vec_json.json",function(json){
 		numpy_vecs = json;
-        make_dropdown_menu(numpy_vecs)
+        make_dropdown_menu(document.getElementById("category_options"),numpy_vecs)
 		$(".vec_calc_elmt").show();
 	})
 }
