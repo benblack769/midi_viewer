@@ -116,7 +116,7 @@ def ignore_ticks(stack_tick_fn):
     return new_fn
 
 def choose_chords_at_random_time_intervals(ticks, time_interval=1.0/6.0):
-
+    pass
 
 
 _methods_by_name = {

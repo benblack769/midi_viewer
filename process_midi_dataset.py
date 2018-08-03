@@ -163,11 +163,6 @@ def associate_metadata(data_2d, associate_dataframe, actual_filenames):
 def are_unique(items):
     return len(items) == len(set(items))
 
-def csv_to_json(csv_name,json_name):
-    fieldnames = ("FirstName","LastName","IDNumber","Message")
-    reader = csv.DictReader( csvfile, fieldnames)
-    out = json.dumps( [ row for row in reader ] )
-
 def read_file(filename):
     with open(filename) as  file:
         return file.read()
@@ -217,10 +212,13 @@ def save_doc_data(output_path,doc_vecs,all_text_files):
     out_dataframe.to_csv(os.path.join(output_path,DOCUMENT_FILES,OUT_DATAFRAME),index=False)
     out_dataframe.to_json(os.path.join(output_path,DOCUMENT_FILES,OUT_JSON_VIEW),orient="records")
 
+    save_string(os.path.join(output_path,DOCUMENT_FILES,VEC_JSON),json.dumps(round_list_lists(doc_vecs.tolist()),separators=(',', ':')))
+
     shutil.copyfile("viewer/display_template.html",os.path.join(output_path,DOCUMENT_FILES,VIEWER_HTML))
     shutil.copyfile("viewer/template.js",os.path.join(output_path,DOCUMENT_FILES,VIEWER_JS))
+    shutil.copyfile("viewer/math_lib.js",os.path.join(output_path,DOCUMENT_FILES,"math_lib.js"))
     shutil.copyfile("viewer/metricsgraphics.js",os.path.join(output_path,DOCUMENT_FILES,"metricsgraphics.js"))
-    prepare_json_var(os.path.join(output_path,DOCUMENT_FILES,OUT_JSON_VIEW),os.path.join(output_path,DOCUMENT_FILES,VIEWER_JSON))
+    #prepare_json_var(os.path.join(output_path,DOCUMENT_FILES,OUT_JSON_VIEW),os.path.join(output_path,DOCUMENT_FILES,VIEWER_JSON))
 
 def process_word_file(output_path,word):
     dest_text_midi_filename = os.path.join(output_path,WORD_FILES,MIDI_TEXT_MIDI_FOLDER,word+".mid")
@@ -247,13 +245,13 @@ def save_word_data(output_path,unique_words,word_vecs,count_stats):
     word_all_dframe.to_csv(os.path.join(output_path,WORD_FILES,OUT_DATAFRAME),index=False)
     word_view_dframe.to_csv(os.path.join(output_path,WORD_FILES,OUT_DATAFRAME_PART),index=False)
     word_view_dframe.to_json(os.path.join(output_path,WORD_FILES,OUT_JSON_PART_VIEW),orient="records")
-    #word_dframe.to_json(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),orient="records")
+    #word_view_dframe.to_json(os.path.join(output_path,WORD_FILES,OUT_JSON_VIEW),orient="records")
 
     shutil.copyfile("viewer/word_display_template.html",os.path.join(output_path,WORD_FILES,VIEWER_HTML))
     shutil.copyfile("viewer/word_template.js",os.path.join(output_path,WORD_FILES,VIEWER_JS))
     shutil.copyfile("viewer/math_lib.js",os.path.join(output_path,WORD_FILES,"math_lib.js"))
     shutil.copyfile("viewer/metricsgraphics.js",os.path.join(output_path,WORD_FILES,"metricsgraphics.js"))
-    prepare_json_var(os.path.join(output_path,WORD_FILES,OUT_JSON_PART_VIEW),os.path.join(output_path,WORD_FILES,VIEWER_JSON))
+    #prepare_json_var(os.path.join(output_path,WORD_FILES,OUT_JSON_PART_VIEW),os.path.join(output_path,WORD_FILES,VIEWER_JSON))
 
     view_word_vec_list = filter_indicies(word_vecs.tolist(),word_view_dframe.idx)
     save_string(os.path.join(output_path,WORD_FILES,VEC_JSON),json.dumps(round_list_lists(view_word_vec_list),separators=(',', ':')))

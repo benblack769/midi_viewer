@@ -1,6 +1,7 @@
-var word_mapping = new Map(input_json_data.map(dict=>[dict.chord_repr,dict]))
+var input_json_data = null;
+var word_mapping = null;//new Map(input_json_data.map(dict=>[dict.chord_repr,dict]))
 //input_json_data.forEach(function(dict){word_mapping[dict.chord_repr]=dict})
-var word_list = input_json_data.map(dict=>dict.chord_repr)
+var word_list = null;//input_json_data.map(dict=>dict.chord_repr)
 var numpy_vecs = null;
 
 var xsize = 800;
@@ -49,25 +50,17 @@ function draw_red_circ(parent_id,cx,cy){
 		.attr("stroke-width", 3)
 }
 function select_word(chord){
-	clear_red_circ("#overview_select")
 	//document.getElementById("selected_display").value = ""
 	if(word_mapping.has(chord)){
 		var word_idx = word_list.indexOf(chord)
+        var word_data = input_json_data[word_idx]
 
-		var point_dom_elmt = $('#overview_plot svg g.mg-points circle.path-'+word_idx)
-
-		draw_red_circ("#overview_select",point_dom_elmt.attr("cx"),point_dom_elmt.attr("cy"))
-
-		redraw_red_circ()
+		redraw_red_circ(word_data.x,word_data.y)
 
 		document.getElementById("selected_display").value = chord
 	}
 }
 function handle_selection(){
-	d3.select("#overview_plot svg").append('g')
-			.attr("id","overview_select")
-
-	$("#overview_plot").hide()
 	d3.select("#data_plot svg").append('g')
 			.attr("id","data_select")
 	$("#selected_display").change(function(){
@@ -81,7 +74,6 @@ function handle_calculation(){
             play_audio(word_mapping.get(this_val).chord)
         }
     })
-    add_to_dropdown_menu($("#song_list"),word_list)
 	$(".analogy_calc").change(function(){
 		var val1 = $('#analogy1_in').val()
 		var val2 = $('#analogy2_in').val()
@@ -116,31 +108,18 @@ function handle_calculation(){
 		document.getElementById("dist_res").innerText = result;
 	})
 }
-function redraw_red_circ(){
-	var elmt = $("#overview_select circle")[0]
-	if(!elmt){
-		return;
-	}
-	//console.log(elmt)
-	var point = {
-		x: elmt.cx.baseVal.value,
-		y: elmt.cy.baseVal.value,
-	}
-	var data_point = {
-		x: graphics[1].scales.X.invert(point.x),
-		y: graphics[1].scales.Y.invert(point.y),
-	}
+function redraw_red_circ(xval, yval){
 	var display_point = {
-		x: graphics[0].scales.X(data_point.x),
-		y: graphics[0].scales.Y(data_point.y),
+		x: graphics[0].scales.X(xval),
+		y: graphics[0].scales.Y(yval),
 	}
 	draw_red_circ("#data_select",display_point.x,display_point.y);
 }
-function make_graphic(){
+function make_graphic(input_data){
 	var data_graphic = {
       title: "Musica",
       //description: "Yearly UFO sightings from 1945 to 2010.",
-      data: input_json_data,
+      data: input_data,
       width: xsize,
       height: ysize,
       target: "#data_plot",
@@ -152,7 +131,7 @@ function make_graphic(){
 	  click_to_zoom_out: false,
       //brush: 'xy',
 	  zoom_callback:function(){
-		redraw_red_circ()
+          select_word($("#selected_display").val())
 	  },
       mouseover: function(d, i) {
             // custom format the rollover text, show days
@@ -165,41 +144,28 @@ function make_graphic(){
     }
     }
     graphics.push(data_graphic);
-	graphics.push({
-      title: "Musica",
-      //description: "Yearly UFO sightings from 1945 to 2010.",
-      data: input_json_data,
-      width: 400,
-      height: 300,
-        top: 20,
-        bottom: 20,
-        right: 0,
-        left: 0,
-      target: "#overview_plot",
-      x_accessor: "x",
-      y_accessor: "y",
-      chart_type:'point',
-	  zoom_target: data_graphic,
-      brush: 'xy',
-        x_axis: false,
-        y_axis: false,
-        showActivePoint: false,
-    });
 	MG.data_graphic(graphics[0])
-	MG.data_graphic(graphics[1])
 	$("#zoom_out_button").click(function(){
 		MG.zoom_to_raw_range(data_graphic)
 	})
 }
-
-
-//function make_download_button()
-$(document).ready(function(e) {
+function load_data(){
+    $.getJSON("view_data.json",function(json){
+        input_json_data = json;
+        word_mapping = new Map(input_json_data.map(dict=>[dict.chord_repr,dict]))
+        word_list = input_json_data.map(dict=>dict.chord_repr)
+        add_to_dropdown_menu($("#song_list"),word_list)
+        make_graphic(input_json_data)
+    	handle_calculation()
+    	handle_selection()
+    })
 	$.getJSON("vec_json.json",function(json){
 		numpy_vecs = json;
 		$(".vec_calc_elmt").show();
 	})
-    make_graphic()
-	handle_calculation()
-	handle_selection()
+}
+
+//function make_download_button()
+$(document).ready(function(e) {
+    load_data()
 })
