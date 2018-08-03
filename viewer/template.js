@@ -108,6 +108,10 @@ function make_graphic(){
         graphic_args.color_range = graphic_args.color_domain.map(to_color)
     }
     MG.data_graphic(graphic_args);
+
+	$("#zoom_out_button").click(function(){
+		MG.zoom_to_raw_range(graphic_args)
+	})
 }
 function setup_interactive(){
     var filename_list = input_json_data.map(dict=>dict['filename'])
@@ -126,9 +130,6 @@ function setup_interactive(){
         download_type("midi_text_midi_files/")
     })
 
-	$("#zoom_out_button").click(function(){
-		MG.zoom_to_raw_range(graphic_args)
-	})
     $("#select_options").change(change_selection)
     $("#select_out_options").change(make_graphic)
 }
